@@ -5,40 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bikewatching</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="global.css" />
     <link rel="stylesheet" href="map.css" />
     <script src="map.js" type="module"></script>
   </head>
   <body>
-    <header class="page-header">
+    <header>
       <div>
-        <p class="eyebrow">Lab 7: Geospatial Visualizations</p>
-        <h1>Bikewatching</h1>
-        <p class="lede">
-          Explore Boston-area Bluebikes traffic by station, time of day, and flow direction.
+        <h1>🚲 Bikewatching</h1>
+        <p>
+          An interactive map of Boston-area Bluebikes traffic, station activity,
+          and bike lane patterns throughout the day.
         </p>
       </div>
-
-      <form class="token-form" id="token-form">
-        <label for="mapbox-token">Mapbox public token</label>
-        <div class="token-row">
-          <input
-            id="mapbox-token"
-            name="mapbox-token"
-            type="password"
-            placeholder="pk..."
-            autocomplete="off"
-          />
-          <button type="submit">Load map</button>
-        </div>
-        <p class="token-help">
-          Saved in your browser only. Get this from your Mapbox dashboard.
-        </p>
-      </form>
-
       <label class="time-filter" for="time-slider">
-        <span>Filter by time</span>
+        Filter by time:
         <input id="time-slider" type="range" min="-1" max="1439" value="-1" />
         <time id="selected-time"></time>
         <em id="any-time">(any time)</em>
@@ -46,17 +31,13 @@
     </header>
 
     <main>
-      <p id="status" class="status">
-        Enter a Mapbox token to load the basemap and overlays.
-      </p>
       <div id="map">
         <svg aria-hidden="true"></svg>
       </div>
-      <div class="legend" aria-label="Traffic flow legend">
-        <span class="legend-title">Legend</span>
-        <div style="--departure-ratio: 1">More departures</div>
-        <div style="--departure-ratio: 0.5">Balanced</div>
-        <div style="--departure-ratio: 0">More arrivals</div>
+      <div class="legend">
+        <div style="--legend-color: steelblue">More departures</div>
+        <div style="--legend-color: darkorange">Balanced</div>
+        <div style="--legend-color: hotpink">More arrivals</div>
       </div>
     </main>
   </body>

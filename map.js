@@ -1,13 +1,14 @@
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 
+console.log('Mapbox GL JS Loaded:', mapboxgl);
+
 const BOSTON_LANES_URL =
   'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson';
 const CAMBRIDGE_LANES_URL =
   'https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/main/Recreation/Bike_Facilities/RECREATION_BikeFacilities.geojson';
 const STATIONS_URL = 'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
 const TRAFFIC_URL = 'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv';
-const TOKEN_STORAGE_KEY = 'bikewatching.mapboxToken';
 
 const svg = d3.select('#map').select('svg');
 const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
@@ -18,26 +19,23 @@ let baseStations = [];
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
 
-const tokenForm = document.getElementById('token-form');
-const tokenInput = document.getElementById('mapbox-token');
-const statusElement = document.getElementById('status');
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
 const anyTimeLabel = document.getElementById('any-time');
 
-tokenInput.value = localStorage.getItem(TOKEN_STORAGE_KEY) ?? '';
+mapboxgl.accessToken =
+  'pk.eyJ1Ijoic2l5YXNhdGhheWUiLCJhIjoiY21wOThzODBiMHIxZjJwcTBtNjRteDJnYSJ9.c8YX-MZaAv4cUvivS6i8tA';
 
-function setStatus(message, isError = false) {
-  statusElement.textContent = message;
-  statusElement.style.color = isError ? '#8a1c1c' : '';
-}
+function getFlowColor(departureRatio) {
+  if (departureRatio === 1) {
+    return 'steelblue';
+  }
 
-function getStoredToken() {
-  return localStorage.getItem(TOKEN_STORAGE_KEY)?.trim() ?? '';
-}
+  if (departureRatio === 0.5) {
+    return 'darkorange';
+  }
 
-function saveToken(token) {
-  localStorage.setItem(TOKEN_STORAGE_KEY, token.trim());
+  return 'hotpink';
 }
 
 function formatTime(minutes) {
@@ -115,21 +113,22 @@ function renderStations(stations) {
 
   const merged = circlesEnter.merge(circles);
 
+  merged.selectAll('title').remove();
+
   merged
     .attr('r', (station) => radiusScale(station.totalTraffic))
-    .style('--departure-ratio', (station) => {
+    .style('fill', (station) => {
       const ratio =
         station.totalTraffic === 0 ? 0.5 : station.departures / station.totalTraffic;
-      return stationFlow(ratio);
+      return getFlowColor(stationFlow(ratio));
+    })
+    .each(function (station) {
+      d3.select(this)
+        .append('title')
+        .text(
+          `${station.totalTraffic} trips (${station.departures} departures, ${station.arrivals} arrivals)`,
+        );
     });
-
-  merged.selectAll('title').remove();
-  merged
-    .append('title')
-    .text(
-      (station) =>
-        `${station.name}: ${station.totalTraffic} trips (${station.departures} departures, ${station.arrivals} arrivals)`,
-    );
 
   updateCirclePositions();
 }
@@ -156,39 +155,18 @@ function updateTimeDisplay() {
 }
 
 async function initializeMap() {
-  const token = getStoredToken();
-
-  if (!token) {
-    setStatus('Enter a Mapbox token to load the basemap and overlays.');
-    return;
-  }
-
-  mapboxgl.accessToken = token;
-
-  if (map) {
-    map.remove();
-  }
-
-  svg.selectAll('*').remove();
-  departuresByMinute = Array.from({ length: 1440 }, () => []);
-  arrivalsByMinute = Array.from({ length: 1440 }, () => []);
-
-  setStatus('Loading map and Bluebikes datasets...');
-
   map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/streets-v12',
     center: [-71.09415, 42.36027],
     zoom: 12,
-    minZoom: 9,
+    minZoom: 5,
     maxZoom: 18,
   });
 
-  map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-
   map.on('load', async () => {
     try {
-      const [stationResponse] = await Promise.all([
+      const [jsonData] = await Promise.all([
         d3.json(STATIONS_URL),
         d3.csv(TRAFFIC_URL, (trip) => {
           trip.started_at = new Date(trip.started_at);
@@ -203,7 +181,9 @@ async function initializeMap() {
         }),
       ]);
 
-      baseStations = stationResponse.data.stations;
+      console.log('Loaded JSON Data:', jsonData);
+      baseStations = jsonData.data.stations;
+      console.log('Stations Array:', baseStations);
       const initialStations = computeStationTraffic(baseStations);
 
       radiusScale.domain([0, d3.max(initialStations, (station) => station.totalTraffic) ?? 0]);
@@ -228,14 +208,14 @@ async function initializeMap() {
         id: 'boston-bike-lanes',
         type: 'line',
         source: 'boston-bike-lanes',
-        paint: bikeLanePaint,
+        paint: bikeLanePaint
       });
 
       map.addLayer({
         id: 'cambridge-bike-lanes',
         type: 'line',
         source: 'cambridge-bike-lanes',
-        paint: bikeLanePaint,
+        paint: bikeLanePaint
       });
 
       renderStations(initialStations);
@@ -245,39 +225,11 @@ async function initializeMap() {
       map.on('zoom', updateCirclePositions);
       map.on('resize', updateCirclePositions);
       map.on('moveend', updateCirclePositions);
-
-      setStatus(
-        `Loaded ${baseStations.length} Bluebikes stations with March 2024 traffic and bike lanes from Boston and Cambridge.`,
-      );
     } catch (error) {
       console.error(error);
-      setStatus(
-        'The map loaded, but one or more datasets failed to load. Check the console for details.',
-        true,
-      );
-    }
-  });
-
-  map.on('error', (event) => {
-    console.error(event.error);
-    if (String(event.error?.message ?? '').toLowerCase().includes('token')) {
-      setStatus('Mapbox rejected the token. Paste a valid public token and load the map again.', true);
     }
   });
 }
-
-tokenForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  const token = tokenInput.value.trim();
-
-  if (!token) {
-    setStatus('Enter a Mapbox public token before loading the map.', true);
-    return;
-  }
-
-  saveToken(token);
-  initializeMap();
-});
 
 timeSlider.addEventListener('input', updateTimeDisplay);
 updateTimeDisplay();

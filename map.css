@@ -1,17 +1,10 @@
 #map {
   position: relative;
-  height: min(72vh, 52rem);
-  min-height: 32rem;
-  overflow: hidden;
-  border-radius: 1.2rem;
-  box-shadow: 0 26px 70px rgba(22, 35, 33, 0.18);
-}
-
-#map .mapboxgl-map,
-#map .mapboxgl-canvas-container,
-#map .mapboxgl-canvas {
   width: 100%;
-  height: 100%;
+  height: 75vh;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 #map svg {
@@ -19,64 +12,59 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 2;
+  z-index: 1;
   pointer-events: none;
 }
 
-#map circle,
-.legend > div::before {
-  --color: color-mix(
-    in oklch,
-    var(--color-departures) calc(100% * var(--departure-ratio)),
-    var(--color-arrivals)
-  );
-}
-
 #map circle {
-  fill: var(--color);
   fill-opacity: 0.6;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-width: 1.2;
+  stroke: white;
+  stroke-width: 1;
   pointer-events: auto;
-  transition: r 160ms ease, fill 160ms ease;
 }
 
 .legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.85rem 1rem;
-}
-
-.legend-title {
-  font-weight: 700;
+  gap: 1px;
+  margin-block: 1em 0;
 }
 
 .legend > div {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--text);
+  flex: 1;
+  background: var(--legend-color);
+  color: white;
+  padding: 0.5em 1.25em;
+  font-size: 0.9rem;
 }
 
-.legend > div::before {
-  content: "";
-  width: 1rem;
-  height: 1rem;
-  border-radius: 999px;
-  background: var(--color);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+.legend > div:first-child {
+  text-align: left;
 }
 
-@media (max-width: 640px) {
-  #map {
-    height: 62vh;
-    min-height: 24rem;
+.legend > div:nth-child(2) {
+  text-align: center;
+}
+
+.legend > div:last-child {
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .time-filter {
+    margin-left: 0;
   }
 
   .legend {
-    gap: 0.7rem 1rem;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  .legend > div {
+    text-align: center;
   }
 }
